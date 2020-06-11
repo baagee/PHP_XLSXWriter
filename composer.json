@@ -1,16 +1,15 @@
 {
-    "name": "mk-j/php_xlsxwriter",
+    "name": "baagee/xlsx-writer",
     "description": "PHP Library to write XLSX files",
     "keywords": ["php", "library","xls", "xlsx", "excel"],
     "type": "project",
-    "homepage": "https://github.com/mk-j/PHP_XLSXWriter",
+    "homepage": "https://github.com/baagee/PHP_XLSXWriter",
     "license": "MIT",
 
     "autoload": {
-        "classmap": ["xlsxwriter.class.php"]
-    },
-    "require-dev": {
-        "phpunit/phpunit": "4.3.*"
+        "psr-4": {
+            "BaAGee\\Excel\\": "./src"
+        }
     },
     "require": {
         "php": ">=5.2.1",
