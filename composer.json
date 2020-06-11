@@ -9,7 +9,7 @@
         "excel"
     ],
     "minimum-stability": "dev",
-    "type": "project",
+    "type": "library",
     "homepage": "https://github.com/baagee/PHP_XLSXWriter",
     "license": "MIT",
     "autoload": {
