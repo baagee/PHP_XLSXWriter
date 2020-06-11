@@ -1,8 +1,8 @@
 <?php
-set_include_path( get_include_path().PATH_SEPARATOR."..");
-include_once("xlsxwriter.class.php");
+include __DIR__ . '/../vendor/autoload.php';
+$fileName = __DIR__ . '/excel/' . basename(__FILE__ . '.php') . '.xlsx';
 
-$writer = new XLSXWriter();
+$writer = new \BaAGee\Excel\XLSXWriter();
 $colors = array('ff','cc','99','66','33','00');
 foreach($colors as $b) {
 	foreach($colors as $g) {
@@ -15,4 +15,4 @@ foreach($colors as $b) {
 		$writer->writeSheetRow('Sheet1', $rowdata, $rowstyle );
 	}
 }
-$writer->writeToFile('xlsx-colors.xlsx');
+$writer->writeToFile($fileName);

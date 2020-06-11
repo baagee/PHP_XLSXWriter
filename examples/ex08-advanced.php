@@ -1,8 +1,8 @@
 <?php
-set_include_path( get_include_path().PATH_SEPARATOR."..");
-include_once("xlsxwriter.class.php");
+include __DIR__ . '/../vendor/autoload.php';
+$fileName = __DIR__ . '/excel/' . basename(__FILE__ . '.php') . '.xlsx';
 
-$writer = new XLSXWriter();
+$writer = new \BaAGee\Excel\XLSXWriter();
 $keywords = array('some','interesting','keywords');
 
 $writer->setTitle('Some Title');
@@ -49,6 +49,6 @@ $writer->writeSheetHeader($sheet4, ["col1"=>"string", "col2"=>"string"], $col_op
 $writer->writeSheetRow($sheet4, array(101,'this text will wrap'    ), $row_options = array('height'=>30,'wrap_text'=>true));
 $writer->writeSheetRow($sheet4, array(201,'this text is hidden'    ), $row_options = array('height'=>30,'hidden'=>true));
 $writer->writeSheetRow($sheet4, array(301,'this text will not wrap'), $row_options = array('height'=>30,'collapsed'=>true));
-$writer->writeToFile('xlsx-advanced.xlsx');
+$writer->writeToFile($fileName);
 
 

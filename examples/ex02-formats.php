@@ -1,6 +1,6 @@
 <?php
-set_include_path( get_include_path().PATH_SEPARATOR."..");
-include_once("xlsxwriter.class.php");
+include __DIR__ . '/../vendor/autoload.php';
+$fileName = __DIR__ . '/excel/' . basename(__FILE__ . '.php') . '.xlsx';
 
 $sheet1header = array(
     'c1-string'=>'string',
@@ -44,7 +44,7 @@ $date = '2018-12-31 23:59:59';
 $time = '23:59:59';
 $amount = '5120.5';
 
-$writer = new XLSXWriter();
+$writer = new \BaAGee\Excel\XLSXWriter();
 $writer->setAuthor('Some Author');
 $writer->writeSheetHeader('BasicFormats',$sheet1header);
 $writer->writeSheetRow('BasicFormats',array($pi,$pi,$pi,$pi,$pi,$pi,$pi,$pi,$pi) );
@@ -52,7 +52,7 @@ $writer->writeSheetHeader('Dates',$sheet2header);
 $writer->writeSheetRow('Dates',array($date,$date,$date,$date,$date,$date,$date,$date,$date,$date,$time,$time) );
 $writer->writeSheetHeader('Currencies',$sheet3header);
 $writer->writeSheetRow('Currencies',array($amount,$amount,$amount,$amount,$amount,$amount,$amount,$amount,$amount) );
-$writer->writeToFile('xlsx-formats.xlsx');
+$writer->writeToFile($fileName);
 //$writer->writeToStdOut();
 //echo $writer->writeToString();
 
