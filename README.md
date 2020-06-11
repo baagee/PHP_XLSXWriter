@@ -1,6 +1,8 @@
 PHP_XLSXWriter
 ==============
 
+Forked from https://github.com/mk-j/PHP_XLSXWriter
+
 This library is designed to be lightweight, and have minimal memory usage.
 
 It is designed to output an Excel compatible spreadsheet in (Office 2007+) xlsx format, with just basic features supported:
@@ -11,7 +13,6 @@ It is designed to output an Excel compatible spreadsheet in (Office 2007+) xlsx 
 * supports basic cell styling
 * supports writing huge 100K+ row spreadsheets
 
-[Never run out of memory with PHPExcel again](https://github.com/mk-j/PHP_XLSXWriter).
 
 Simple PHP CLI example:
 ```php
@@ -21,7 +22,7 @@ $data = array(
     array('2003','2','153.5'),
 );
 
-$writer = new XLSXWriter();
+$writer = new \BaAGee\Excel\XLSXWriter();
 $writer->writeSheet($data);
 $writer->writeToFile('output.xlsx');
 ```
@@ -41,7 +42,7 @@ $data = array(
     array('2015-01-12',324,2,'88.00','none','=D3*0.05'),
 );
 
-$writer = new XLSXWriter();
+$writer = new \BaAGee\Excel\XLSXWriter();
 $writer->writeSheetHeader('Sheet1', $header );
 foreach($data as $row)
 	$writer->writeSheetRow('Sheet1', $row );
@@ -50,8 +51,7 @@ $writer->writeToFile('example.xlsx');
 
 50000 rows: (1.4s, 0MB memory usage)
 ```php
-include_once("xlsxwriter.class.php");
-$writer = new XLSXWriter();
+$writer = new \BaAGee\Excel\XLSXWriter();
 $writer->writeSheetHeader('Sheet1', array('c1'=>'integer','c2'=>'integer','c3'=>'integer','c4'=>'integer') );
 for($i=0; $i<50000; $i++)
 {
