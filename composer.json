@@ -1,11 +1,17 @@
 {
     "name": "baagee/xlsx-writer",
     "description": "PHP Library to write XLSX files",
-    "keywords": ["php", "library","xls", "xlsx", "excel"],
+    "keywords": [
+        "php",
+        "library",
+        "xls",
+        "xlsx",
+        "excel"
+    ],
+    "minimum-stability": "dev",
     "type": "project",
     "homepage": "https://github.com/baagee/PHP_XLSXWriter",
     "license": "MIT",
-
     "autoload": {
         "psr-4": {
             "BaAGee\\Excel\\": "./src"

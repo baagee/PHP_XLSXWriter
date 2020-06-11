@@ -8,12 +8,31 @@
 
 namespace BaAGee\Excel;
 
+/**
+ * Class WriterBuffer
+ * @package BaAGee\Excel
+ */
 class WriterBuffer
 {
-    protected $fd         = null;
-    protected $buffer     = '';
+    /**
+     * @var bool|resource|null
+     */
+    protected $fd = null;
+    /**
+     * @var string
+     */
+    protected $buffer = '';
+    /**
+     * @var bool
+     */
     protected $check_utf8 = false;
 
+    /**
+     * WriterBuffer constructor.
+     * @param        $filename
+     * @param string $fd_fopen_flags
+     * @param bool   $check_utf8
+     */
     public function __construct($filename, $fd_fopen_flags = 'w', $check_utf8 = false)
     {
         $this->check_utf8 = $check_utf8;
@@ -23,6 +42,9 @@ class WriterBuffer
         }
     }
 
+    /**
+     * @param $string
+     */
     public function write($string)
     {
         $this->buffer .= $string;
@@ -31,6 +53,9 @@ class WriterBuffer
         }
     }
 
+    /**
+     *
+     */
     protected function purge()
     {
         if ($this->fd) {
@@ -43,6 +68,9 @@ class WriterBuffer
         }
     }
 
+    /**
+     *
+     */
     public function close()
     {
         $this->purge();
@@ -52,29 +80,43 @@ class WriterBuffer
         }
     }
 
+    /**
+     *
+     */
     public function __destruct()
     {
         $this->close();
     }
 
-    public function ftell()
+    /**
+     * @return bool|int
+     */
+    public function fTell()
     {
         if ($this->fd) {
             $this->purge();
-            return ftell($this->fd);
+            return fTell($this->fd);
         }
         return -1;
     }
 
-    public function fseek($pos)
+    /**
+     * @param $pos
+     * @return int
+     */
+    public function fSeek($pos)
     {
         if ($this->fd) {
             $this->purge();
-            return fseek($this->fd, $pos);
+            return fSeek($this->fd, $pos);
         }
         return -1;
     }
 
+    /**
+     * @param $string
+     * @return bool
+     */
     protected static function isValidUTF8($string)
     {
         if (function_exists('mb_check_encoding')) {

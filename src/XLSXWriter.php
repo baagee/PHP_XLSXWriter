@@ -1,6 +1,6 @@
 <?php
 /**
- * Desc:
+ * Desc: 生成xlsx表格
  * User: baagee
  * Date: 2020/6/11
  * Time: 下午2:32
@@ -8,95 +8,181 @@
 
 namespace BaAGee\Excel;
 
+/**
+ * Class XLSXWriter
+ * @package BaAGee\Excel
+ */
 class XLSXWriter
 {
     //http://www.ecma-international.org/publications/standards/Ecma-376.htm
     //http://officeopenxml.com/SSstyles.php
-    //------------------------------------------------------------------
+
     //http://office.microsoft.com/en-us/excel-help/excel-specifications-and-limits-HP010073849.aspx
+    /**
+     *
+     */
     const EXCEL_2007_MAX_ROW = 1048576;
+    /**
+     *
+     */
     const EXCEL_2007_MAX_COL = 16384;
-    //------------------------------------------------------------------
+
+    /**
+     * @var
+     */
     protected $title;
+    /**
+     * @var
+     */
     protected $subject;
+    /**
+     * @var
+     */
     protected $author;
+    /**
+     * @var
+     */
     protected $isRightToLeft;
+    /**
+     * @var
+     */
     protected $company;
+    /**
+     * @var
+     */
     protected $description;
+    /**
+     * @var array
+     */
     protected $keywords = array();
 
-    protected $current_sheet;
-    protected $sheets         = array();
-    protected $temp_files     = array();
-    protected $cell_styles    = array();
-    protected $number_formats = array();
+    /**
+     * @var
+     */
+    protected $currentSheet;
+    /**
+     * @var array
+     */
+    protected $sheets = array();
+    /**
+     * @var array
+     */
+    protected $tempFiles = array();
+    /**
+     * @var string
+     */
+    protected $tempDir = '';
+    /**
+     * @var array
+     */
+    protected $cellStyles = array();
+    /**
+     * @var array
+     */
+    protected $numberFormats = array();
 
+    /**
+     * XLSXWriter constructor.
+     */
     public function __construct()
     {
         defined('ENT_XML1') or define('ENT_XML1', 16);//for php 5.3, avoid fatal error
         date_default_timezone_get() or date_default_timezone_set('UTC');//php.ini missing tz, avoid warning
         is_writeable($this->tempFilename()) or self::log("Warning: tempdir " . sys_get_temp_dir() . " not writeable, use ->setTempDir()");
-        class_exists('ZipArchive') or self::log("Error: ZipArchive class does not exist");
+        class_exists('\ZipArchive') or self::log("Error: ZipArchive class does not exist");
         $this->addCellStyle($number_format = 'GENERAL', $style_string = null);
     }
 
+    /**
+     * @param string $title
+     */
     public function setTitle($title = '')
     {
         $this->title = $title;
     }
 
+    /**
+     * @param string $subject
+     */
     public function setSubject($subject = '')
     {
         $this->subject = $subject;
     }
 
+    /**
+     * @param string $author
+     */
     public function setAuthor($author = '')
     {
         $this->author = $author;
     }
 
+    /**
+     * @param string $company
+     */
     public function setCompany($company = '')
     {
         $this->company = $company;
     }
 
+    /**
+     * @param string $keywords
+     */
     public function setKeywords($keywords = '')
     {
         $this->keywords = $keywords;
     }
 
+    /**
+     * @param string $description
+     */
     public function setDescription($description = '')
     {
         $this->description = $description;
     }
 
-    public function setTempDir($tempdir = '')
+    /**
+     * @param string $tempDir
+     */
+    public function setTempDir($tempDir = '')
     {
-        $this->tempdir = $tempdir;
+        $this->tempDir = $tempDir;
     }
 
+    /**
+     * @param bool $isRightToLeft
+     */
     public function setRightToLeft($isRightToLeft = false)
     {
         $this->isRightToLeft = $isRightToLeft;
     }
 
+    /**
+     *
+     */
     public function __destruct()
     {
-        if (!empty($this->temp_files)) {
-            foreach ($this->temp_files as $temp_file) {
+        if (!empty($this->tempFiles)) {
+            foreach ($this->tempFiles as $temp_file) {
                 @unlink($temp_file);
             }
         }
     }
 
+    /**
+     * @return bool|string
+     */
     protected function tempFilename()
     {
-        $tempdir = !empty($this->tempdir) ? $this->tempdir : sys_get_temp_dir();
+        $tempdir = !empty($this->tempDir) ? $this->tempDir : sys_get_temp_dir();
         $filename = tempnam($tempdir, "xlsx_writer_");
-        $this->temp_files[] = $filename;
+        $this->tempFiles[] = $filename;
         return $filename;
     }
 
+    /**
+     *
+     */
     public function writeToStdOut()
     {
         $temp_file = $this->tempFilename();
@@ -104,14 +190,19 @@ class XLSXWriter
         readfile($temp_file);
     }
 
+    /**
+     * @return bool|string
+     */
     public function writeToString()
     {
         $temp_file = $this->tempFilename();
         self::writeToFile($temp_file);
-        $string = file_get_contents($temp_file);
-        return $string;
+        return file_get_contents($temp_file);
     }
 
+    /**
+     * @param $filename
+     */
     public function writeToFile($filename)
     {
         foreach ($this->sheets as $sheet_name => $sheet) {
@@ -131,7 +222,7 @@ class XLSXWriter
             self::log("Error in " . __CLASS__ . "::" . __FUNCTION__ . ", no worksheets defined.");
             return;
         }
-        if (!$zip->open($filename, ZipArchive::CREATE)) {
+        if (!$zip->open($filename, \ZipArchive::CREATE)) {
             self::log("Error in " . __CLASS__ . "::" . __FUNCTION__ . ", unable to create zip.");
             return;
         }
@@ -156,10 +247,17 @@ class XLSXWriter
         $zip->close();
     }
 
+    /**
+     * @param       $sheet_name
+     * @param array $col_widths
+     * @param bool  $auto_filter
+     * @param bool  $freeze_rows
+     * @param bool  $freeze_columns
+     */
     protected function initializeSheet($sheet_name, $col_widths = array(), $auto_filter = false, $freeze_rows = false, $freeze_columns = false)
     {
         //if already initialized
-        if ($this->current_sheet == $sheet_name || isset($this->sheets[$sheet_name]))
+        if ($this->currentSheet == $sheet_name || isset($this->sheets[$sheet_name]))
             return;
 
         $sheet_filename = $this->tempFilename();
@@ -191,9 +289,9 @@ class XLSXWriter
         $sheet->file_writer->write('<sheetPr filterMode="false">');
         $sheet->file_writer->write('<pageSetUpPr fitToPage="false"/>');
         $sheet->file_writer->write('</sheetPr>');
-        $sheet->max_cell_tag_start = $sheet->file_writer->ftell();
+        $sheet->max_cell_tag_start = $sheet->file_writer->fTell();
         $sheet->file_writer->write('<dimension ref="A1:' . $max_cell . '"/>');
-        $sheet->max_cell_tag_end = $sheet->file_writer->ftell();
+        $sheet->max_cell_tag_end = $sheet->file_writer->fTell();
         $sheet->file_writer->write('<sheetViews>');
         $sheet->file_writer->write('<sheetView colorId="64" defaultGridColor="true" rightToLeft="' . $rightToLeftValue . '" showFormulas="false" showGridLines="true" showOutlineSymbols="true" showRowColHeaders="true" showZeros="true" tabSelected="' . $tabselected . '" topLeftCell="A1" view="normal" windowProtection="false" workbookViewId="0" zoomScale="100" zoomScaleNormal="100" zoomScalePageLayoutView="100">');
         if ($sheet->freeze_rows && $sheet->freeze_columns) {
@@ -225,14 +323,22 @@ class XLSXWriter
         $sheet->file_writer->write('<sheetData>');
     }
 
+    /**
+     * @param $number_format
+     * @param $cell_style_string
+     * @return false|int|string
+     */
     private function addCellStyle($number_format, $cell_style_string)
     {
-        $number_format_idx = self::add_to_list_get_index($this->number_formats, $number_format);
+        $number_format_idx = self::addToListGetIndex($this->numberFormats, $number_format);
         $lookup_string = $number_format_idx . ";" . $cell_style_string;
-        $cell_style_idx = self::add_to_list_get_index($this->cell_styles, $lookup_string);
-        return $cell_style_idx;
+        return self::addToListGetIndex($this->cellStyles, $lookup_string);
     }
 
+    /**
+     * @param $header_types
+     * @return array
+     */
     private function initializeColumnTypes($header_types)
     {
         $column_types = array();
@@ -248,6 +354,11 @@ class XLSXWriter
         return $column_types;
     }
 
+    /**
+     * @param       $sheet_name
+     * @param array $header_types
+     * @param null  $col_options
+     */
     public function writeSheetHeader($sheet_name, array $header_types, $col_options = null)
     {
         if (empty($sheet_name) || empty($header_types) || !empty($this->sheets[$sheet_name]))
@@ -278,9 +389,14 @@ class XLSXWriter
             $sheet->file_writer->write('</row>');
             $sheet->row_count++;
         }
-        $this->current_sheet = $sheet_name;
+        $this->currentSheet = $sheet_name;
     }
 
+    /**
+     * @param       $sheet_name
+     * @param array $row
+     * @param null  $row_options
+     */
     public function writeSheetRow($sheet_name, array $row, $row_options = null)
     {
         if (empty($sheet_name))
@@ -314,15 +430,22 @@ class XLSXWriter
         }
         $sheet->file_writer->write('</row>');
         $sheet->row_count++;
-        $this->current_sheet = $sheet_name;
+        $this->currentSheet = $sheet_name;
     }
 
+    /**
+     * @param string $sheet_name
+     * @return int
+     */
     public function countSheetRows($sheet_name = '')
     {
-        $sheet_name = $sheet_name ? $sheet_name : $this->current_sheet;
+        $sheet_name = $sheet_name ? $sheet_name : $this->currentSheet;
         return array_key_exists($sheet_name, $this->sheets) ? $this->sheets[$sheet_name]->row_count : 0;
     }
 
+    /**
+     * @param $sheet_name
+     */
     protected function finalizeSheet($sheet_name)
     {
         if (empty($sheet_name) || $this->sheets[$sheet_name]->finalized)
@@ -357,12 +480,19 @@ class XLSXWriter
 
         $max_cell_tag = '<dimension ref="A1:' . $max_cell . '"/>';
         $padding_length = $sheet->max_cell_tag_end - $sheet->max_cell_tag_start - strlen($max_cell_tag);
-        $sheet->file_writer->fseek($sheet->max_cell_tag_start);
+        $sheet->file_writer->fSeek($sheet->max_cell_tag_start);
         $sheet->file_writer->write($max_cell_tag . str_repeat(" ", $padding_length));
         $sheet->file_writer->close();
         $sheet->finalized = true;
     }
 
+    /**
+     * @param $sheet_name
+     * @param $start_cell_row
+     * @param $start_cell_column
+     * @param $end_cell_row
+     * @param $end_cell_column
+     */
     public function markMergedCell($sheet_name, $start_cell_row, $start_cell_column, $end_cell_row, $end_cell_column)
     {
         if (empty($sheet_name) || $this->sheets[$sheet_name]->finalized)
@@ -376,6 +506,11 @@ class XLSXWriter
         $sheet->merge_cells[] = $startCell . ":" . $endCell;
     }
 
+    /**
+     * @param array  $data
+     * @param string $sheet_name
+     * @param array  $header_types
+     */
     public function writeSheet(array $data, $sheet_name = '', array $header_types = array())
     {
         $sheet_name = empty($sheet_name) ? 'Sheet1' : $sheet_name;
@@ -389,6 +524,14 @@ class XLSXWriter
         $this->finalizeSheet($sheet_name);
     }
 
+    /**
+     * @param WriterBuffer $file
+     * @param              $row_number
+     * @param              $column_number
+     * @param              $value
+     * @param              $num_format_type
+     * @param              $cell_style_idx
+     */
     protected function writeCell(WriterBuffer &$file, $row_number, $column_number, $value, $num_format_type, $cell_style_idx)
     {
         $cell_name = self::xlsCell($row_number, $column_number);
@@ -396,24 +539,27 @@ class XLSXWriter
         if (!is_scalar($value) || $value === '') { //objects, array, empty
             $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '"/>');
         } elseif (is_string($value) && $value[0] == '=') {
-            $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="s"><f>' . self::xmlspecialchars($value) . '</f></c>');
+            $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="s"><f>' . self::xmlSpecialChars($value) . '</f></c>');
         } elseif ($num_format_type == 'n_date') {
-            $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="n"><v>' . intval(self::convert_date_time($value)) . '</v></c>');
+            $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="n"><v>' . intval(self::convertDateTime($value)) . '</v></c>');
         } elseif ($num_format_type == 'n_datetime') {
-            $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="n"><v>' . self::convert_date_time($value) . '</v></c>');
+            $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="n"><v>' . self::convertDateTime($value) . '</v></c>');
         } elseif ($num_format_type == 'n_numeric') {
-            $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="n"><v>' . self::xmlspecialchars($value) . '</v></c>');//int,float,currency
+            $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="n"><v>' . self::xmlSpecialChars($value) . '</v></c>');//int,float,currency
         } elseif ($num_format_type == 'n_string') {
-            $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="inlineStr"><is><t>' . self::xmlspecialchars($value) . '</t></is></c>');
+            $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="inlineStr"><is><t>' . self::xmlSpecialChars($value) . '</t></is></c>');
         } elseif ($num_format_type == 'n_auto' || 1) { //auto-detect unknown column types
             if (!is_string($value) || $value == '0' || ($value[0] != '0' && ctype_digit($value)) || preg_match("/^\-?(0|[1-9][0-9]*)(\.[0-9]+)?$/", $value)) {
-                $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="n"><v>' . self::xmlspecialchars($value) . '</v></c>');//int,float,currency
+                $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="n"><v>' . self::xmlSpecialChars($value) . '</v></c>');//int,float,currency
             } else { //implied: ($cell_format=='string')
-                $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="inlineStr"><is><t>' . self::xmlspecialchars($value) . '</t></is></c>');
+                $file->write('<c r="' . $cell_name . '" s="' . $cell_style_idx . '" t="inlineStr"><is><t>' . self::xmlSpecialChars($value) . '</t></is></c>');
             }
         }
     }
 
+    /**
+     * @return array
+     */
     protected function styleFontIndexes()
     {
         static $border_allowed = array('left', 'right', 'top', 'bottom');
@@ -425,7 +571,7 @@ class XLSXWriter
         $fonts = array('', '', '', '');//4 placeholders for static xml later
         $borders = array('');//1 placeholder for static xml later
         $style_indexes = array();
-        foreach ($this->cell_styles as $i => $cell_style_string) {
+        foreach ($this->cellStyles as $i => $cell_style_string) {
             $semi_colon_pos = strpos($cell_style_string, ";");
             $number_format_idx = substr($cell_style_string, 0, $semi_colon_pos);
             $style_json_string = substr($cell_style_string, $semi_colon_pos + 1);
@@ -443,12 +589,12 @@ class XLSXWriter
                     $v = strlen($v) == 3 ? $v[0] . $v[0] . $v[1] . $v[1] . $v[2] . $v[2] : $v;// expand cf0 => ccff00
                     $border_value['color'] = "FF" . strtoupper($v);
                 }
-                $style_indexes[$i]['border_idx'] = self::add_to_list_get_index($borders, json_encode($border_value));
+                $style_indexes[$i]['border_idx'] = self::addToListGetIndex($borders, json_encode($border_value));
             }
             if (isset($style['fill']) && is_string($style['fill']) && $style['fill'][0] == '#') {
                 $v = substr($style['fill'], 1, 6);
                 $v = strlen($v) == 3 ? $v[0] . $v[0] . $v[1] . $v[1] . $v[2] . $v[2] : $v;// expand cf0 => ccff00
-                $style_indexes[$i]['fill_idx'] = self::add_to_list_get_index($fills, "FF" . strtoupper($v));
+                $style_indexes[$i]['fill_idx'] = self::addToListGetIndex($fills, "FF" . strtoupper($v));
             }
             if (isset($style['halign']) && in_array($style['halign'], $horizontal_allowed)) {
                 $style_indexes[$i]['alignment'] = true;
@@ -499,12 +645,15 @@ class XLSXWriter
                 $font['color'] = "FF" . strtoupper($v);
             }
             if ($font != $default_font) {
-                $style_indexes[$i]['font_idx'] = self::add_to_list_get_index($fonts, json_encode($font));
+                $style_indexes[$i]['font_idx'] = self::addToListGetIndex($fonts, json_encode($font));
             }
         }
         return array('fills' => $fills, 'fonts' => $fonts, 'borders' => $borders, 'styles' => $style_indexes);
     }
 
+    /**
+     * @return bool|string
+     */
     protected function writeStylesXML()
     {
         $r = self::styleFontIndexes();
@@ -517,9 +666,9 @@ class XLSXWriter
         $file = new WriterBuffer($temporary_filename);
         $file->write('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n");
         $file->write('<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">');
-        $file->write('<numFmts count="' . count($this->number_formats) . '">');
-        foreach ($this->number_formats as $i => $v) {
-            $file->write('<numFmt numFmtId="' . (164 + $i) . '" formatCode="' . self::xmlspecialchars($v) . '" />');
+        $file->write('<numFmts count="' . count($this->numberFormats) . '">');
+        foreach ($this->numberFormats as $i => $v) {
+            $file->write('<numFmt numFmtId="' . (164 + $i) . '" formatCode="' . self::xmlSpecialChars($v) . '" />');
         }
         //$file->write(		'<numFmt formatCode="GENERAL" numFmtId="164"/>');
         //$file->write(		'<numFmt formatCode="[$$-1009]#,##0.00;[RED]\-[$$-1009]#,##0.00" numFmtId="165"/>');
@@ -648,35 +797,44 @@ class XLSXWriter
         return $temporary_filename;
     }
 
+    /**
+     * @return string
+     */
     protected function buildAppXML()
     {
         $app_xml = "";
         $app_xml .= '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
         $app_xml .= '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">';
         $app_xml .= '<TotalTime>0</TotalTime>';
-        $app_xml .= '<Company>' . self::xmlspecialchars($this->company) . '</Company>';
+        $app_xml .= '<Company>' . self::xmlSpecialChars($this->company) . '</Company>';
         $app_xml .= '</Properties>';
         return $app_xml;
     }
 
+    /**
+     * @return string
+     */
     protected function buildCoreXML()
     {
         $core_xml = "";
         $core_xml .= '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
         $core_xml .= '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">';
         $core_xml .= '<dcterms:created xsi:type="dcterms:W3CDTF">' . date("Y-m-d\TH:i:s.00\Z") . '</dcterms:created>';//$date_time = '2014-10-25T15:54:37.00Z';
-        $core_xml .= '<dc:title>' . self::xmlspecialchars($this->title) . '</dc:title>';
-        $core_xml .= '<dc:subject>' . self::xmlspecialchars($this->subject) . '</dc:subject>';
-        $core_xml .= '<dc:creator>' . self::xmlspecialchars($this->author) . '</dc:creator>';
+        $core_xml .= '<dc:title>' . self::xmlSpecialChars($this->title) . '</dc:title>';
+        $core_xml .= '<dc:subject>' . self::xmlSpecialChars($this->subject) . '</dc:subject>';
+        $core_xml .= '<dc:creator>' . self::xmlSpecialChars($this->author) . '</dc:creator>';
         if (!empty($this->keywords)) {
-            $core_xml .= '<cp:keywords>' . self::xmlspecialchars(implode(", ", (array)$this->keywords)) . '</cp:keywords>';
+            $core_xml .= '<cp:keywords>' . self::xmlSpecialChars(implode(", ", (array)$this->keywords)) . '</cp:keywords>';
         }
-        $core_xml .= '<dc:description>' . self::xmlspecialchars($this->description) . '</dc:description>';
+        $core_xml .= '<dc:description>' . self::xmlSpecialChars($this->description) . '</dc:description>';
         $core_xml .= '<cp:revision>0</cp:revision>';
         $core_xml .= '</cp:coreProperties>';
         return $core_xml;
     }
 
+    /**
+     * @return string
+     */
     protected function buildRelationshipsXML()
     {
         $rels_xml = "";
@@ -690,6 +848,9 @@ class XLSXWriter
         return $rels_xml;
     }
 
+    /**
+     * @return string
+     */
     protected function buildWorkbookXML()
     {
         $i = 0;
@@ -700,16 +861,16 @@ class XLSXWriter
         $workbook_xml .= '<bookViews><workbookView activeTab="0" firstSheet="0" showHorizontalScroll="true" showSheetTabs="true" showVerticalScroll="true" tabRatio="212" windowHeight="8192" windowWidth="16384" xWindow="0" yWindow="0"/></bookViews>';
         $workbook_xml .= '<sheets>';
         foreach ($this->sheets as $sheet_name => $sheet) {
-            $sheetname = self::sanitize_sheetname($sheet->sheetname);
-            $workbook_xml .= '<sheet name="' . self::xmlspecialchars($sheetname) . '" sheetId="' . ($i + 1) . '" state="visible" r:id="rId' . ($i + 2) . '"/>';
+            $sheetName = self::sanitizeSheetName($sheet->sheetname);
+            $workbook_xml .= '<sheet name="' . self::xmlSpecialChars($sheetName) . '" sheetId="' . ($i + 1) . '" state="visible" r:id="rId' . ($i + 2) . '"/>';
             $i++;
         }
         $workbook_xml .= '</sheets>';
         $workbook_xml .= '<definedNames>';
         foreach ($this->sheets as $sheet_name => $sheet) {
             if ($sheet->auto_filter) {
-                $sheetname = self::sanitize_sheetname($sheet->sheetname);
-                $workbook_xml .= '<definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">\'' . self::xmlspecialchars($sheetname) . '\'!$A$1:' . self::xlsCell($sheet->row_count - 1, count($sheet->columns) - 1, true) . '</definedName>';
+                $sheetName = self::sanitizeSheetName($sheet->sheetname);
+                $workbook_xml .= '<definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">\'' . self::xmlSpecialChars($sheetName) . '\'!$A$1:' . self::xlsCell($sheet->row_count - 1, count($sheet->columns) - 1, true) . '</definedName>';
                 $i++;
             }
         }
@@ -718,6 +879,9 @@ class XLSXWriter
         return $workbook_xml;
     }
 
+    /**
+     * @return string
+     */
     protected function buildWorkbookRelsXML()
     {
         $i = 0;
@@ -734,6 +898,9 @@ class XLSXWriter
         return $wkbkrels_xml;
     }
 
+    /**
+     * @return string
+     */
     protected function buildContentTypesXML()
     {
         $content_types_xml = "";
@@ -753,13 +920,12 @@ class XLSXWriter
         return $content_types_xml;
     }
 
-    //------------------------------------------------------------------
-    /*
-     * @param $row_number int, zero based
+    /**
+     * @param $row_number    int, zero based
      * @param $column_number int, zero based
-     * @param $absolute bool
-     * @return Cell label/coordinates, ex: A1, C3, AA42 (or if $absolute==true: $A$1, $C$3, $AA$42)
-     * */
+     * @param $absolute      bool
+     * @return string Cell label/coordinates, ex: A1, C3, AA42 (or if $absolute==true: $A$1, $C$3, $AA$42)
+     */
     public static function xlsCell($row_number, $column_number, $absolute = false)
     {
         $n = $column_number;
@@ -772,15 +938,20 @@ class XLSXWriter
         return $r . ($row_number + 1);
     }
 
-    //------------------------------------------------------------------
+    /**
+     * @param $string
+     */
     public static function log($string)
     {
         //file_put_contents("php://stderr", date("Y-m-d H:i:s:").rtrim(is_array($string) ? json_encode($string) : $string)."\n");
         error_log(date("Y-m-d H:i:s:") . rtrim(is_array($string) ? json_encode($string) : $string) . "\n");
     }
 
-    //------------------------------------------------------------------
-    public static function sanitize_filename($filename) //http://msdn.microsoft.com/en-us/library/aa365247%28VS.85%29.aspx
+    /**
+     * @param $filename
+     * @return mixed
+     */
+    public static function sanitizeFilename($filename) //http://msdn.microsoft.com/en-us/library/aa365247%28VS.85%29.aspx
     {
         $nonprinting = array_map('chr', range(0, 31));
         $invalid_chars = array('<', '>', '?', '"', ':', '|', '\\', '/', '*', '&');
@@ -788,19 +959,25 @@ class XLSXWriter
         return str_replace($all_invalids, "", $filename);
     }
 
-    //------------------------------------------------------------------
-    public static function sanitize_sheetname($sheetname)
+    /**
+     * @param $sheetName
+     * @return string
+     */
+    public static function sanitizeSheetName($sheetName)
     {
         static $badchars = '\\/?*:[]';
         static $goodchars = '        ';
-        $sheetname = strtr($sheetname, $badchars, $goodchars);
-        $sheetname = function_exists('mb_substr') ? mb_substr($sheetname, 0, 31) : substr($sheetname, 0, 31);
-        $sheetname = trim(trim(trim($sheetname), "'"));//trim before and after trimming single quotes
-        return !empty($sheetname) ? $sheetname : 'Sheet' . ((rand() % 900) + 100);
+        $sheetName = strtr($sheetName, $badchars, $goodchars);
+        $sheetName = function_exists('mb_substr') ? mb_substr($sheetName, 0, 31) : substr($sheetName, 0, 31);
+        $sheetName = trim(trim(trim($sheetName), "'"));//trim before and after trimming single quotes
+        return !empty($sheetName) ? $sheetName : 'Sheet' . ((rand() % 900) + 100);
     }
 
-    //------------------------------------------------------------------
-    public static function xmlspecialchars($val)
+    /**
+     * @param $val
+     * @return string
+     */
+    public static function xmlSpecialChars($val)
     {
         //note, badchars does not include \t\n\r (\x09\x0a\x0d)
         static $badchars = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x7f";
@@ -808,15 +985,10 @@ class XLSXWriter
         return strtr(htmlspecialchars($val, ENT_QUOTES | ENT_XML1), $badchars, $goodchars);//strtr appears to be faster than str_replace
     }
 
-    //------------------------------------------------------------------
-    public static function array_first_key(array $arr)
-    {
-        reset($arr);
-        $first_key = key($arr);
-        return $first_key;
-    }
-
-    //------------------------------------------------------------------
+    /**
+     * @param $num_format
+     * @return string
+     */
     private static function determineNumberFormatType($num_format)
     {
         $num_format = preg_replace("/\[(Black|Blue|Cyan|Green|Magenta|Red|White|Yellow)\]/i", "", $num_format);
@@ -845,7 +1017,10 @@ class XLSXWriter
         return 'n_auto';
     }
 
-    //------------------------------------------------------------------
+    /**
+     * @param $num_format
+     * @return string
+     */
     private static function numberFormatStandardized($num_format)
     {
         if ($num_format == 'money') {
@@ -889,8 +1064,12 @@ class XLSXWriter
         return $escaped;
     }
 
-    //------------------------------------------------------------------
-    public static function add_to_list_get_index(&$haystack, $needle)
+    /**
+     * @param $haystack
+     * @param $needle
+     * @return false|int|string
+     */
+    public static function addToListGetIndex(&$haystack, $needle)
     {
         $existing_idx = array_search($needle, $haystack, $strict = true);
         if ($existing_idx === false) {
@@ -900,10 +1079,12 @@ class XLSXWriter
         return $existing_idx;
     }
 
-    //------------------------------------------------------------------
-    public static function convert_date_time($date_input) //thanks to Excel::Writer::XLSX::Worksheet.pm (perl)
+    /**
+     * @param $date_input
+     * @return float|int|mixed
+     */
+    public static function convertDateTime($date_input) //thanks to Excel::Writer::XLSX::Worksheet.pm (perl)
     {
-        $days = 0;    # Number of days since epoch
         $seconds = 0;    # Time expressed as fraction of 24h hours in seconds
         $year = $month = $day = 0;
         $hour = $min = $sec = 0;
@@ -966,5 +1147,5 @@ class XLSXWriter
 
         return $days + $seconds;
     }
-    //------------------------------------------------------------------
+
 }
