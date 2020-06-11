@@ -236,7 +236,7 @@ class XLSXWriter
 
         $zip->addEmptyDir("xl/worksheets/");
         foreach ($this->sheets as $sheet) {
-            $zip->addFile($sheet->filename, "xl/worksheets/" . $sheet->xmlname);
+            $zip->addFile($sheet->fileName, "xl/worksheets/" . $sheet->xmlName);
         }
         $zip->addFromString("xl/workbook.xml", self::buildWorkbookXML());
         $zip->addFile($this->writeStylesXML(), "xl/styles.xml");  //$zip->addFromString("xl/styles.xml"           , self::buildStylesXML() );
@@ -260,67 +260,50 @@ class XLSXWriter
         if ($this->currentSheet == $sheet_name || isset($this->sheets[$sheet_name]))
             return;
 
-        $sheet_filename = $this->tempFilename();
-        $sheet_xmlname = 'sheet' . (count($this->sheets) + 1) . ".xml";
-        $this->sheets[$sheet_name] = (object)array(
-            'filename' => $sheet_filename,
-            'sheetname' => $sheet_name,
-            'xmlname' => $sheet_xmlname,
-            'row_count' => 0,
-            'file_writer' => new WriterBuffer($sheet_filename),
-            'columns' => array(),
-            'merge_cells' => array(),
-            'max_cell_tag_start' => 0,
-            'max_cell_tag_end' => 0,
-            'auto_filter' => $auto_filter,
-            'freeze_rows' => $freeze_rows,
-            'freeze_columns' => $freeze_columns,
-            'finalized' => false,
-        );
+        $sheetFileName = $this->tempFilename();
+        $sheetXmlName = 'sheet' . (count($this->sheets) + 1) . ".xml";
+        $sheet = new ExcelSheet($sheetFileName, $sheet_name, $sheetXmlName, $auto_filter, $freeze_rows, $freeze_columns);
+        $this->sheets[$sheet_name] = $sheet;
         $rightToLeftValue = $this->isRightToLeft ? 'true' : 'false';
-        /**
-         * @var $sheet WriterBuffer
-         */
-        $sheet = &$this->sheets[$sheet_name];
         $tabselected = count($this->sheets) == 1 ? 'true' : 'false';//only first sheet is selected
         $max_cell = XLSXWriter::xlsCell(self::EXCEL_2007_MAX_ROW, self::EXCEL_2007_MAX_COL);//XFE1048577
-        $sheet->file_writer->write('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n");
-        $sheet->file_writer->write('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">');
-        $sheet->file_writer->write('<sheetPr filterMode="false">');
-        $sheet->file_writer->write('<pageSetUpPr fitToPage="false"/>');
-        $sheet->file_writer->write('</sheetPr>');
-        $sheet->max_cell_tag_start = $sheet->file_writer->fTell();
-        $sheet->file_writer->write('<dimension ref="A1:' . $max_cell . '"/>');
-        $sheet->max_cell_tag_end = $sheet->file_writer->fTell();
-        $sheet->file_writer->write('<sheetViews>');
-        $sheet->file_writer->write('<sheetView colorId="64" defaultGridColor="true" rightToLeft="' . $rightToLeftValue . '" showFormulas="false" showGridLines="true" showOutlineSymbols="true" showRowColHeaders="true" showZeros="true" tabSelected="' . $tabselected . '" topLeftCell="A1" view="normal" windowProtection="false" workbookViewId="0" zoomScale="100" zoomScaleNormal="100" zoomScalePageLayoutView="100">');
-        if ($sheet->freeze_rows && $sheet->freeze_columns) {
-            $sheet->file_writer->write('<pane ySplit="' . $sheet->freeze_rows . '" xSplit="' . $sheet->freeze_columns . '" topLeftCell="' . self::xlsCell($sheet->freeze_rows, $sheet->freeze_columns) . '" activePane="bottomRight" state="frozen"/>');
-            $sheet->file_writer->write('<selection activeCell="' . self::xlsCell($sheet->freeze_rows, 0) . '" activeCellId="0" pane="topRight" sqref="' . self::xlsCell($sheet->freeze_rows, 0) . '"/>');
-            $sheet->file_writer->write('<selection activeCell="' . self::xlsCell(0, $sheet->freeze_columns) . '" activeCellId="0" pane="bottomLeft" sqref="' . self::xlsCell(0, $sheet->freeze_columns) . '"/>');
-            $sheet->file_writer->write('<selection activeCell="' . self::xlsCell($sheet->freeze_rows, $sheet->freeze_columns) . '" activeCellId="0" pane="bottomRight" sqref="' . self::xlsCell($sheet->freeze_rows, $sheet->freeze_columns) . '"/>');
-        } elseif ($sheet->freeze_rows) {
-            $sheet->file_writer->write('<pane ySplit="' . $sheet->freeze_rows . '" topLeftCell="' . self::xlsCell($sheet->freeze_rows, 0) . '" activePane="bottomLeft" state="frozen"/>');
-            $sheet->file_writer->write('<selection activeCell="' . self::xlsCell($sheet->freeze_rows, 0) . '" activeCellId="0" pane="bottomLeft" sqref="' . self::xlsCell($sheet->freeze_rows, 0) . '"/>');
-        } elseif ($sheet->freeze_columns) {
-            $sheet->file_writer->write('<pane xSplit="' . $sheet->freeze_columns . '" topLeftCell="' . self::xlsCell(0, $sheet->freeze_columns) . '" activePane="topRight" state="frozen"/>');
-            $sheet->file_writer->write('<selection activeCell="' . self::xlsCell(0, $sheet->freeze_columns) . '" activeCellId="0" pane="topRight" sqref="' . self::xlsCell(0, $sheet->freeze_columns) . '"/>');
+        $sheet->fileWriter->write('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n");
+        $sheet->fileWriter->write('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">');
+        $sheet->fileWriter->write('<sheetPr filterMode="false">');
+        $sheet->fileWriter->write('<pageSetUpPr fitToPage="false"/>');
+        $sheet->fileWriter->write('</sheetPr>');
+        $sheet->maxCellTagStart = $sheet->fileWriter->fTell();
+        $sheet->fileWriter->write('<dimension ref="A1:' . $max_cell . '"/>');
+        $sheet->maxCellTagEnd = $sheet->fileWriter->fTell();
+        $sheet->fileWriter->write('<sheetViews>');
+        $sheet->fileWriter->write('<sheetView colorId="64" defaultGridColor="true" rightToLeft="' . $rightToLeftValue . '" showFormulas="false" showGridLines="true" showOutlineSymbols="true" showRowColHeaders="true" showZeros="true" tabSelected="' . $tabselected . '" topLeftCell="A1" view="normal" windowProtection="false" workbookViewId="0" zoomScale="100" zoomScaleNormal="100" zoomScalePageLayoutView="100">');
+        if ($sheet->freezeRows && $sheet->freezeColumns) {
+            $sheet->fileWriter->write('<pane ySplit="' . $sheet->freezeRows . '" xSplit="' . $sheet->freezeColumns . '" topLeftCell="' . self::xlsCell($sheet->freezeRows, $sheet->freezeColumns) . '" activePane="bottomRight" state="frozen"/>');
+            $sheet->fileWriter->write('<selection activeCell="' . self::xlsCell($sheet->freezeRows, 0) . '" activeCellId="0" pane="topRight" sqref="' . self::xlsCell($sheet->freezeRows, 0) . '"/>');
+            $sheet->fileWriter->write('<selection activeCell="' . self::xlsCell(0, $sheet->freezeColumns) . '" activeCellId="0" pane="bottomLeft" sqref="' . self::xlsCell(0, $sheet->freezeColumns) . '"/>');
+            $sheet->fileWriter->write('<selection activeCell="' . self::xlsCell($sheet->freezeRows, $sheet->freezeColumns) . '" activeCellId="0" pane="bottomRight" sqref="' . self::xlsCell($sheet->freezeRows, $sheet->freezeColumns) . '"/>');
+        } elseif ($sheet->freezeRows) {
+            $sheet->fileWriter->write('<pane ySplit="' . $sheet->freezeRows . '" topLeftCell="' . self::xlsCell($sheet->freezeRows, 0) . '" activePane="bottomLeft" state="frozen"/>');
+            $sheet->fileWriter->write('<selection activeCell="' . self::xlsCell($sheet->freezeRows, 0) . '" activeCellId="0" pane="bottomLeft" sqref="' . self::xlsCell($sheet->freezeRows, 0) . '"/>');
+        } elseif ($sheet->freezeColumns) {
+            $sheet->fileWriter->write('<pane xSplit="' . $sheet->freezeColumns . '" topLeftCell="' . self::xlsCell(0, $sheet->freezeColumns) . '" activePane="topRight" state="frozen"/>');
+            $sheet->fileWriter->write('<selection activeCell="' . self::xlsCell(0, $sheet->freezeColumns) . '" activeCellId="0" pane="topRight" sqref="' . self::xlsCell(0, $sheet->freezeColumns) . '"/>');
         } else { // not frozen
-            $sheet->file_writer->write('<selection activeCell="A1" activeCellId="0" pane="topLeft" sqref="A1"/>');
+            $sheet->fileWriter->write('<selection activeCell="A1" activeCellId="0" pane="topLeft" sqref="A1"/>');
         }
-        $sheet->file_writer->write('</sheetView>');
-        $sheet->file_writer->write('</sheetViews>');
-        $sheet->file_writer->write('<cols>');
+        $sheet->fileWriter->write('</sheetView>');
+        $sheet->fileWriter->write('</sheetViews>');
+        $sheet->fileWriter->write('<cols>');
         $i = 0;
         if (!empty($col_widths)) {
             foreach ($col_widths as $column_width) {
-                $sheet->file_writer->write('<col collapsed="false" hidden="false" max="' . ($i + 1) . '" min="' . ($i + 1) . '" style="0" customWidth="true" width="' . floatval($column_width) . '"/>');
+                $sheet->fileWriter->write('<col collapsed="false" hidden="false" max="' . ($i + 1) . '" min="' . ($i + 1) . '" style="0" customWidth="true" width="' . floatval($column_width) . '"/>');
                 $i++;
             }
         }
-        $sheet->file_writer->write('<col collapsed="false" hidden="false" max="1024" min="' . ($i + 1) . '" style="0" customWidth="false" width="11.5"/>');
-        $sheet->file_writer->write('</cols>');
-        $sheet->file_writer->write('<sheetData>');
+        $sheet->fileWriter->write('<col collapsed="false" hidden="false" max="1024" min="' . ($i + 1) . '" style="0" customWidth="false" width="11.5"/>');
+        $sheet->fileWriter->write('</cols>');
+        $sheet->fileWriter->write('<sheetData>');
     }
 
     /**
@@ -376,18 +359,18 @@ class XLSXWriter
         $freeze_rows = isset($col_options['freeze_rows']) ? intval($col_options['freeze_rows']) : false;
         $freeze_columns = isset($col_options['freeze_columns']) ? intval($col_options['freeze_columns']) : false;
         self::initializeSheet($sheet_name, $col_widths, $auto_filter, $freeze_rows, $freeze_columns);
-        $sheet = &$this->sheets[$sheet_name];
+        $sheet = $this->sheets[$sheet_name];
         $sheet->columns = $this->initializeColumnTypes($header_types);
         if (!$suppress_row) {
             $header_row = array_keys($header_types);
 
-            $sheet->file_writer->write('<row collapsed="false" customFormat="false" customHeight="false" hidden="false" ht="12.1" outlineLevel="0" r="' . (1) . '">');
+            $sheet->fileWriter->write('<row collapsed="false" customFormat="false" customHeight="false" hidden="false" ht="12.1" outlineLevel="0" r="' . (1) . '">');
             foreach ($header_row as $c => $v) {
                 $cell_style_idx = empty($style) ? $sheet->columns[$c]['default_cell_style'] : $this->addCellStyle('GENERAL', json_encode(isset($style[0]) ? $style[$c] : $style));
-                $this->writeCell($sheet->file_writer, 0, $c, $v, $number_format_type = 'n_string', $cell_style_idx);
+                $this->writeCell($sheet->fileWriter, 0, $c, $v, $number_format_type = 'n_string', $cell_style_idx);
             }
-            $sheet->file_writer->write('</row>');
-            $sheet->row_count++;
+            $sheet->fileWriter->write('</row>');
+            $sheet->rowCount++;
         }
         $this->currentSheet = $sheet_name;
     }
@@ -403,7 +386,7 @@ class XLSXWriter
             return;
 
         $this->initializeSheet($sheet_name);
-        $sheet = &$this->sheets[$sheet_name];
+        $sheet = $this->sheets[$sheet_name];
         if (count($sheet->columns) < count($row)) {
             $default_column_types = $this->initializeColumnTypes(array_fill($from = 0, $until = count($row), 'GENERAL'));//will map to n_auto
             $sheet->columns = array_merge((array)$sheet->columns, $default_column_types);
@@ -414,9 +397,9 @@ class XLSXWriter
             $customHt = isset($row_options['height']) ? true : false;
             $hidden = isset($row_options['hidden']) ? (bool)($row_options['hidden']) : false;
             $collapsed = isset($row_options['collapsed']) ? (bool)($row_options['collapsed']) : false;
-            $sheet->file_writer->write('<row collapsed="' . ($collapsed) . '" customFormat="false" customHeight="' . ($customHt) . '" hidden="' . ($hidden) . '" ht="' . ($ht) . '" outlineLevel="0" r="' . ($sheet->row_count + 1) . '">');
+            $sheet->fileWriter->write('<row collapsed="' . ($collapsed) . '" customFormat="false" customHeight="' . ($customHt) . '" hidden="' . ($hidden) . '" ht="' . ($ht) . '" outlineLevel="0" r="' . ($sheet->rowCount + 1) . '">');
         } else {
-            $sheet->file_writer->write('<row collapsed="false" customFormat="false" customHeight="false" hidden="false" ht="12.1" outlineLevel="0" r="' . ($sheet->row_count + 1) . '">');
+            $sheet->fileWriter->write('<row collapsed="false" customFormat="false" customHeight="false" hidden="false" ht="12.1" outlineLevel="0" r="' . ($sheet->rowCount + 1) . '">');
         }
 
         $style = &$row_options;
@@ -425,11 +408,11 @@ class XLSXWriter
             $number_format = $sheet->columns[$c]['number_format'];
             $number_format_type = $sheet->columns[$c]['number_format_type'];
             $cell_style_idx = empty($style) ? $sheet->columns[$c]['default_cell_style'] : $this->addCellStyle($number_format, json_encode(isset($style[0]) ? $style[$c] : $style));
-            $this->writeCell($sheet->file_writer, $sheet->row_count, $c, $v, $number_format_type, $cell_style_idx);
+            $this->writeCell($sheet->fileWriter, $sheet->rowCount, $c, $v, $number_format_type, $cell_style_idx);
             $c++;
         }
-        $sheet->file_writer->write('</row>');
-        $sheet->row_count++;
+        $sheet->fileWriter->write('</row>');
+        $sheet->rowCount++;
         $this->currentSheet = $sheet_name;
     }
 
@@ -451,38 +434,41 @@ class XLSXWriter
         if (empty($sheet_name) || $this->sheets[$sheet_name]->finalized)
             return;
 
-        $sheet = &$this->sheets[$sheet_name];
+        /**
+         * @var $sheet ExcelSheet
+         */
+        $sheet = $this->sheets[$sheet_name];
 
-        $sheet->file_writer->write('</sheetData>');
+        $sheet->fileWriter->write('</sheetData>');
 
-        if (!empty($sheet->merge_cells)) {
-            $sheet->file_writer->write('<mergeCells>');
-            foreach ($sheet->merge_cells as $range) {
-                $sheet->file_writer->write('<mergeCell ref="' . $range . '"/>');
+        if (!empty($sheet->mergeCells)) {
+            $sheet->fileWriter->write('<mergeCells>');
+            foreach ($sheet->mergeCells as $range) {
+                $sheet->fileWriter->write('<mergeCell ref="' . $range . '"/>');
             }
-            $sheet->file_writer->write('</mergeCells>');
+            $sheet->fileWriter->write('</mergeCells>');
         }
 
-        $max_cell = self::xlsCell($sheet->row_count - 1, count($sheet->columns) - 1);
+        $max_cell = self::xlsCell($sheet->rowCount - 1, count($sheet->columns) - 1);
 
-        if ($sheet->auto_filter) {
-            $sheet->file_writer->write('<autoFilter ref="A1:' . $max_cell . '"/>');
+        if ($sheet->autoFilter) {
+            $sheet->fileWriter->write('<autoFilter ref="A1:' . $max_cell . '"/>');
         }
 
-        $sheet->file_writer->write('<printOptions headings="false" gridLines="false" gridLinesSet="true" horizontalCentered="false" verticalCentered="false"/>');
-        $sheet->file_writer->write('<pageMargins left="0.5" right="0.5" top="1.0" bottom="1.0" header="0.5" footer="0.5"/>');
-        $sheet->file_writer->write('<pageSetup blackAndWhite="false" cellComments="none" copies="1" draft="false" firstPageNumber="1" fitToHeight="1" fitToWidth="1" horizontalDpi="300" orientation="portrait" pageOrder="downThenOver" paperSize="1" scale="100" useFirstPageNumber="true" usePrinterDefaults="false" verticalDpi="300"/>');
-        $sheet->file_writer->write('<headerFooter differentFirst="false" differentOddEven="false">');
-        $sheet->file_writer->write('<oddHeader>&amp;C&amp;&quot;Times New Roman,Regular&quot;&amp;12&amp;A</oddHeader>');
-        $sheet->file_writer->write('<oddFooter>&amp;C&amp;&quot;Times New Roman,Regular&quot;&amp;12Page &amp;P</oddFooter>');
-        $sheet->file_writer->write('</headerFooter>');
-        $sheet->file_writer->write('</worksheet>');
+        $sheet->fileWriter->write('<printOptions headings="false" gridLines="false" gridLinesSet="true" horizontalCentered="false" verticalCentered="false"/>');
+        $sheet->fileWriter->write('<pageMargins left="0.5" right="0.5" top="1.0" bottom="1.0" header="0.5" footer="0.5"/>');
+        $sheet->fileWriter->write('<pageSetup blackAndWhite="false" cellComments="none" copies="1" draft="false" firstPageNumber="1" fitToHeight="1" fitToWidth="1" horizontalDpi="300" orientation="portrait" pageOrder="downThenOver" paperSize="1" scale="100" useFirstPageNumber="true" usePrinterDefaults="false" verticalDpi="300"/>');
+        $sheet->fileWriter->write('<headerFooter differentFirst="false" differentOddEven="false">');
+        $sheet->fileWriter->write('<oddHeader>&amp;C&amp;&quot;Times New Roman,Regular&quot;&amp;12&amp;A</oddHeader>');
+        $sheet->fileWriter->write('<oddFooter>&amp;C&amp;&quot;Times New Roman,Regular&quot;&amp;12Page &amp;P</oddFooter>');
+        $sheet->fileWriter->write('</headerFooter>');
+        $sheet->fileWriter->write('</worksheet>');
 
         $max_cell_tag = '<dimension ref="A1:' . $max_cell . '"/>';
-        $padding_length = $sheet->max_cell_tag_end - $sheet->max_cell_tag_start - strlen($max_cell_tag);
-        $sheet->file_writer->fSeek($sheet->max_cell_tag_start);
-        $sheet->file_writer->write($max_cell_tag . str_repeat(" ", $padding_length));
-        $sheet->file_writer->close();
+        $padding_length = $sheet->maxCellTagEnd - $sheet->maxCellTagStart - strlen($max_cell_tag);
+        $sheet->fileWriter->fSeek($sheet->maxCellTagStart);
+        $sheet->fileWriter->write($max_cell_tag . str_repeat(" ", $padding_length));
+        $sheet->fileWriter->close();
         $sheet->finalized = true;
     }
 
@@ -499,11 +485,11 @@ class XLSXWriter
             return;
 
         self::initializeSheet($sheet_name);
-        $sheet = &$this->sheets[$sheet_name];
+        $sheet = $this->sheets[$sheet_name];
 
         $startCell = self::xlsCell($start_cell_row, $start_cell_column);
         $endCell = self::xlsCell($end_cell_row, $end_cell_column);
-        $sheet->merge_cells[] = $startCell . ":" . $endCell;
+        $sheet->mergeCells[] = $startCell . ":" . $endCell;
     }
 
     /**
@@ -861,16 +847,16 @@ class XLSXWriter
         $workbook_xml .= '<bookViews><workbookView activeTab="0" firstSheet="0" showHorizontalScroll="true" showSheetTabs="true" showVerticalScroll="true" tabRatio="212" windowHeight="8192" windowWidth="16384" xWindow="0" yWindow="0"/></bookViews>';
         $workbook_xml .= '<sheets>';
         foreach ($this->sheets as $sheet_name => $sheet) {
-            $sheetName = self::sanitizeSheetName($sheet->sheetname);
+            $sheetName = self::sanitizeSheetName($sheet->sheetName);
             $workbook_xml .= '<sheet name="' . self::xmlSpecialChars($sheetName) . '" sheetId="' . ($i + 1) . '" state="visible" r:id="rId' . ($i + 2) . '"/>';
             $i++;
         }
         $workbook_xml .= '</sheets>';
         $workbook_xml .= '<definedNames>';
         foreach ($this->sheets as $sheet_name => $sheet) {
-            if ($sheet->auto_filter) {
-                $sheetName = self::sanitizeSheetName($sheet->sheetname);
-                $workbook_xml .= '<definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">\'' . self::xmlSpecialChars($sheetName) . '\'!$A$1:' . self::xlsCell($sheet->row_count - 1, count($sheet->columns) - 1, true) . '</definedName>';
+            if ($sheet->autoFilter) {
+                $sheetName = self::sanitizeSheetName($sheet->sheetName);
+                $workbook_xml .= '<definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">\'' . self::xmlSpecialChars($sheetName) . '\'!$A$1:' . self::xlsCell($sheet->rowCount - 1, count($sheet->columns) - 1, true) . '</definedName>';
                 $i++;
             }
         }
@@ -890,7 +876,7 @@ class XLSXWriter
         $wkbkrels_xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
         $wkbkrels_xml .= '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
         foreach ($this->sheets as $sheet_name => $sheet) {
-            $wkbkrels_xml .= '<Relationship Id="rId' . ($i + 2) . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/' . ($sheet->xmlname) . '"/>';
+            $wkbkrels_xml .= '<Relationship Id="rId' . ($i + 2) . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/' . ($sheet->xmlName) . '"/>';
             $i++;
         }
         $wkbkrels_xml .= "\n";
@@ -909,7 +895,7 @@ class XLSXWriter
         $content_types_xml .= '<Override PartName="/_rels/.rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>';
         $content_types_xml .= '<Override PartName="/xl/_rels/workbook.xml.rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>';
         foreach ($this->sheets as $sheet_name => $sheet) {
-            $content_types_xml .= '<Override PartName="/xl/worksheets/' . ($sheet->xmlname) . '" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+            $content_types_xml .= '<Override PartName="/xl/worksheets/' . ($sheet->xmlName) . '" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
         }
         $content_types_xml .= '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>';
         $content_types_xml .= '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
