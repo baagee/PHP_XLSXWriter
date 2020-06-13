@@ -1,6 +1,6 @@
 <?php
 include __DIR__ . '/../vendor/autoload.php';
-$fileName = __DIR__ . '/excel/' . basename(__FILE__ . '.php') . '.xlsx';
+$fileName = __DIR__ . '/excel/' . basename(__FILE__ , '.php') . '.xlsx';
 
 $header = array(
     'year' => 'string',

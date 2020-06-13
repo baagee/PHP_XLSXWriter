@@ -27,7 +27,7 @@ foreach ($rows as $row)
 
 //$writer->writeSheet($rows,'Sheet1', $header);//or write the whole sheet in 1 call
 
-$fileName = __DIR__ . '/excel/' . basename(__FILE__ . '.php') . '.xlsx';
+$fileName = __DIR__ . '/excel/' . basename(__FILE__ , '.php') . '.xlsx';
 $writer->writeToFile($fileName);
 //$writer->writeToStdOut();
 // echo $writer->writeToString();

@@ -1,6 +1,6 @@
 <?php
 include __DIR__ . '/../vendor/autoload.php';
-$fileName = __DIR__ . '/excel/' . basename(__FILE__ . '.php') . '.xlsx';
+$fileName = __DIR__ . '/excel/' . basename(__FILE__ , '.php') . '.xlsx';
 
 $writer = new \BaAGee\Excel\XLSXWriter();
 $writer->writeSheetHeader('Sheet1', array('c1' => 'integer', 'c2' => 'integer', 'c3' => 'integer', 'c4' => 'integer'));//optional

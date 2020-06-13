@@ -25,18 +25,18 @@ class WriterBuffer
     /**
      * @var bool
      */
-    protected $check_utf8 = false;
+    protected $checkUtf8 = false;
 
     /**
      * WriterBuffer constructor.
      * @param        $filename
-     * @param string $fd_fopen_flags
-     * @param bool   $check_utf8
+     * @param string $fdFopenFlags
+     * @param bool   $checkUtf8
      */
-    public function __construct($filename, $fd_fopen_flags = 'w', $check_utf8 = false)
+    public function __construct($filename, $fdFopenFlags = 'w', $checkUtf8 = false)
     {
-        $this->check_utf8 = $check_utf8;
-        $this->fd = fopen($filename, $fd_fopen_flags);
+        $this->checkUtf8 = $checkUtf8;
+        $this->fd = fopen($filename, $fdFopenFlags);
         if ($this->fd === false) {
             XLSXWriter::log("Unable to open $filename for writing.");
         }
@@ -59,9 +59,9 @@ class WriterBuffer
     protected function purge()
     {
         if ($this->fd) {
-            if ($this->check_utf8 && !self::isValidUTF8($this->buffer)) {
+            if ($this->checkUtf8 && !self::isValidUTF8($this->buffer)) {
                 XLSXWriter::log("Error, invalid UTF8 encoding detected.");
-                $this->check_utf8 = false;
+                $this->checkUtf8 = false;
             }
             fwrite($this->fd, $this->buffer);
             $this->buffer = '';
@@ -95,7 +95,7 @@ class WriterBuffer
     {
         if ($this->fd) {
             $this->purge();
-            return fTell($this->fd);
+            return ftell($this->fd);
         }
         return -1;
     }
@@ -108,7 +108,7 @@ class WriterBuffer
     {
         if ($this->fd) {
             $this->purge();
-            return fSeek($this->fd, $pos);
+            return fseek($this->fd, $pos);
         }
         return -1;
     }

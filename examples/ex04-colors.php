@@ -1,6 +1,6 @@
 <?php
 include __DIR__ . '/../vendor/autoload.php';
-$fileName = __DIR__ . '/excel/' . basename(__FILE__ . '.php') . '.xlsx';
+$fileName = __DIR__ . '/excel/' . basename(__FILE__ , '.php') . '.xlsx';
 
 $writer = new \BaAGee\Excel\XLSXWriter();
 $colors = array('ff','cc','99','66','33','00');
