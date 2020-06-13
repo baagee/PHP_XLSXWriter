@@ -1,7 +1,7 @@
 PHP_XLSXWriter
 ==============
 
-Forked from https://github.com/mk-j/PHP_XLSXWriter
+Forked from https://github.com/mk-j/PHP_XLSXWriter Add namespace
 
 This library is designed to be lightweight, and have minimal memory usage.
 
