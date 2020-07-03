@@ -24,7 +24,7 @@ $rows = array(
 $writer->writeSheetHeader($sheet1, $header, ['suppress_row' => true]);
 foreach ($rows as $row)
     $writer->writeSheetRow($sheet1, $row);
-$writer->markMergedCell($sheet1, 0, 0, 0, 4);
+$writer->markMergedCell($sheet1, 1, 1, 1, 5);
 
 //----
 $sheet2 = 'utf8';

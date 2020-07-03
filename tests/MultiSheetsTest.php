@@ -1,0 +1,46 @@
+<?php
+/**
+ * Desc:
+ * User: baagee
+ * Date: 2019/7/27
+ * Time: 20:39
+ */
+
+include __DIR__ . '/../vendor/autoload.php';
+
+
+class MultiSheetsTest extends \PHPUnit\Framework\TestCase
+{
+    public function test()
+    {
+        $fileName = __DIR__ . '/excel/' . basename(__FILE__, '.php') . '.xlsx';
+
+        $header = array(
+            'year' => 'string',
+            'month' => 'string',
+            'amount' => 'price',
+            'first_event' => 'datetime',
+            'second_event' => 'date',
+        );
+        $data1 = array(
+            array('2003', '1', '-50.5', '2010-01-01 23:00:00', '2012-12-31 23:00:00'),
+            array('2003', '=B2', '23.5', '2010-01-01 00:00:00', '2012-12-31 00:00:00'),
+            array('2003', "'=B2", '23.5', '2010-01-01 00:00:00', '2012-12-31 00:00:00'),
+        );
+        $data2 = array(
+            array('2003', '01', '343.12', '4000000000'),
+            array('2003', '02', '345.12', '2000000000'),
+        );
+        $writer = new \BaAGee\Excel\XLSXWriter();
+        $writer->writeSheetHeader('Sheet1', $header);
+        foreach ($data1 as $row)
+            $writer->writeSheetRow('Sheet1', $row);
+        foreach ($data2 as $row)
+            $writer->writeSheetRow('Sheet2', $row);
+
+        $writer->writeToFile($fileName);
+        $this->assertNotEmpty('ok');
+    }
+
+}
+

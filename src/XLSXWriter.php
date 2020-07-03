@@ -181,7 +181,7 @@ class XLSXWriter
     }
 
     /**
-     *
+     * 直接输出到std out
      */
     public function writeToStdOut()
     {
@@ -191,6 +191,7 @@ class XLSXWriter
     }
 
     /**
+     * 输出字符串
      * @return bool|string
      */
     public function writeToString()
@@ -201,6 +202,7 @@ class XLSXWriter
     }
 
     /**
+     * 保存到文件
      * @param $filename
      */
     public function writeToFile($filename)
@@ -338,9 +340,10 @@ class XLSXWriter
     }
 
     /**
-     * @param       $sheetName
-     * @param array $headerTypes
-     * @param null  $colOptions
+     * 写入表头
+     * @param string $sheetName
+     * @param array  $headerTypes
+     * @param null   $colOptions
      */
     public function writeSheetHeader($sheetName, array $headerTypes, $colOptions = null)
     {
@@ -376,9 +379,10 @@ class XLSXWriter
     }
 
     /**
-     * @param       $sheetName
-     * @param array $row
-     * @param null  $rowOptions
+     * 写入一行
+     * @param string $sheetName
+     * @param array  $row
+     * @param null   $rowOptions
      */
     public function writeSheetRow($sheetName, array $row, $rowOptions = null)
     {
@@ -417,6 +421,7 @@ class XLSXWriter
     }
 
     /**
+     * 获取行数
      * @param string $sheetName
      * @return int
      */
@@ -473,11 +478,12 @@ class XLSXWriter
     }
 
     /**
-     * @param $sheetName
-     * @param $startCellRow
-     * @param $startCellColumn
-     * @param $endCellRow
-     * @param $endCellColumn
+     * 合并单元格
+     * @param string $sheetName
+     * @param int    $startCellRow    开始行 从1开始
+     * @param int    $startCellColumn 开始列 从1开始
+     * @param int    $endCellRow      结束行 从1开始
+     * @param int    $endCellColumn   结束列 从1开始
      */
     public function markMergedCell($sheetName, $startCellRow, $startCellColumn, $endCellRow, $endCellColumn)
     {
@@ -487,12 +493,13 @@ class XLSXWriter
         self::initializeSheet($sheetName);
         $sheet = $this->sheets[$sheetName];
 
-        $startCell = self::xlsCell($startCellRow, $startCellColumn);
-        $endCell = self::xlsCell($endCellRow, $endCellColumn);
+        $startCell = self::xlsCell($startCellRow - 1, $startCellColumn - 1);
+        $endCell = self::xlsCell($endCellRow - 1, $endCellColumn - 1);
         $sheet->mergeCells[] = $startCell . ":" . $endCell;
     }
 
     /**
+     * 批量写入数据
      * @param array  $data
      * @param string $sheetName
      * @param array  $headerTypes
