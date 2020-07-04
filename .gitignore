@@ -3,3 +3,5 @@ vendor
 examples/excel
 .DS_Store
 examples/.DS_Store
+tests/excel
+tests/codeCoverage
