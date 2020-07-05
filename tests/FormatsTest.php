@@ -66,6 +66,7 @@ class FormatsTest extends \PHPUnit\Framework\TestCase
         $writer->writeSheetHeader('Currencies', $sheet3header);
         $writer->writeSheetRow('Currencies', array($amount, $amount, $amount, $amount, $amount, $amount, $amount, $amount, $amount));
         $writer->writeToFile($fileName);
+        $this->assertEquals($writer->countSheetRows('BasicFormats'), 2);
         //$writer->writeToStdOut();
         //echo $writer->writeToString();
 
