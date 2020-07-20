@@ -13,6 +13,7 @@ It is designed to output an Excel compatible spreadsheet in (Office 2007+) xlsx 
 * supports basic cell styling
 * supports writing huge 100K+ row spreadsheets
 
+Install: composer require baagee/xlsx-writer
 
 Simple PHP CLI example:
 ```php
